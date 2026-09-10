@@ -11,6 +11,7 @@
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "game/Store.h"
+#include "hw/Audio.h"
 #include "hw/Battery.h"
 #include "hw/Display.h"
 #include "hw/Screenshot.h"
@@ -137,6 +138,7 @@ void setup() {
     }
 
     battery::begin();
+    audio::begin();
     game::seedRng(esp_random());
 
     app::screens.reset(new TitleScreen());
@@ -248,6 +250,10 @@ void loop() {
                 }
                 break;
             }
+            case 'B':   // dev: play the audio test chime
+                Serial.printf("[audio] test chime (ready=%d)\n", audio::ready());
+                audio::testChime();
+                break;
             case 'x': game::eventsEnabled = false; Serial.println("[dev] events off"); break;
             case 'X': game::eventsEnabled = true;  Serial.println("[dev] events on");  break;
             case 'A':   // dev: fast-forward to the next arrival / fork / river
