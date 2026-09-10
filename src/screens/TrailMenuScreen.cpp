@@ -59,39 +59,34 @@ void TrailMenuScreen::render(LGFX_Sprite& g) {
 
     // 2 x 2 grid
     const int16_t colW = (W - 8) / 2, x2 = theme::MARGIN + colW + 8;
-    supplies_    = {theme::MARGIN, 100, colW, 32};
-    map_         = {x2,            100, colW, 32};
-    paceRations_ = {theme::MARGIN, 138, colW, 32};
-    rest_        = {x2,            138, colW, 32};
+    supplies_    = {theme::MARGIN, 98,  colW, 32};
+    map_         = {x2,            98,  colW, 32};
+    paceRations_ = {theme::MARGIN, 136, colW, 32};
+    rest_        = {x2,            136, colW, 32};
     ui::drawButton(g, supplies_, "Supplies");
     ui::drawButton(g, map_, "Map");
     ui::drawButton(g, paceRations_, "Pace & rations");
     ui::drawButton(g, rest_, "Rest");
 
     // context row
-    int16_t cy = 176;
     hunt_ = talk_ = {};
+    const int16_t cy = 174;
     if (showHunt_ && showTalk_) {
         hunt_ = {theme::MARGIN, cy, colW, 32};
         talk_ = {x2, cy, colW, 32};
         ui::drawButton(g, hunt_, "Hunt");
         ui::drawButton(g, talk_, "Talk to people");
-        cy += 38;
     } else if (showHunt_) {
         hunt_ = {theme::MARGIN, cy, W, 32};
         ui::drawButton(g, hunt_, "Hunt for food");
-        cy += 38;
     } else if (showTalk_) {
         talk_ = {theme::MARGIN, cy, W, 32};
         ui::drawButton(g, talk_, "Talk to people");
-        cy += 38;
     }
 
-    // abandon — a quiet link at the bottom
-    abandon_ = {theme::MARGIN, 216, W, 22};
-    g.setTextDatum(textdatum_t::middle_center);
-    g.setTextColor(theme::INK_DIM);
-    g.drawString("give up and turn back", 160, 227);
+    // give up — a real button, bottom, kept visually calm
+    abandon_ = {theme::MARGIN, 210, W, 26};
+    ui::drawButton(g, abandon_, "Give up and turn back");
 }
 
 void TrailMenuScreen::onTap(int16_t x, int16_t y) {

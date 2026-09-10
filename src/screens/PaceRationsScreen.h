@@ -1,5 +1,4 @@
-// Set the travelling pace and the food ration in one place. (ChangePace.cs /
-// ChangeRations.cs)
+// Set the travelling pace and the food ration. (ChangePace.cs / ChangeRations.cs)
 #pragma once
 #include <Arduino.h>
 
@@ -19,38 +18,35 @@ public:
         g.fillScreen(theme::BG);
         hud::drawTrailStatus(g);
 
-        g.setFont(&fonts::Font2);
-        g.setTextDatum(textdatum_t::top_left);
-
         static const char* pace[3] = {"Steady - normal pace",
                                       "Strenuous - 50% more a day",
                                       "Grueling - double, hard on all"};
         static const char* rat[3] = {"Filling - 3 lb each",
                                      "Meager - 2 lb each",
                                      "Bare bones - 1 lb each"};
+        const int16_t W = 320 - 2 * theme::MARGIN;
 
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(textdatum_t::top_left);
         g.setTextColor(theme::ACCENT);
-        g.drawString("TRAVELLING PACE", theme::MARGIN, 26);
+        g.drawString("TRAVELLING PACE", theme::MARGIN, 24);
         const int curP = static_cast<int>(game::g.vehicle.pace);
         for (int i = 0; i < 3; ++i) {
-            paceR_[i] = {theme::MARGIN, (int16_t)(42 + i * 30),
-                         320 - 2 * theme::MARGIN, 26};
+            paceR_[i] = {theme::MARGIN, (int16_t)(40 + i * 28), W, 24};
             ui::drawButton(g, paceR_[i], pace[i], i == curP);
         }
 
-        g.setTextColor(theme::ACCENT);
         g.setTextDatum(textdatum_t::top_left);
-        g.drawString("FOOD RATIONS", theme::MARGIN, 136);
+        g.setTextColor(theme::ACCENT);
+        g.drawString("FOOD RATIONS", theme::MARGIN, 128);
         const int curR = static_cast<int>(game::g.vehicle.rations);
         for (int i = 0; i < 3; ++i) {
-            ratR_[i] = {theme::MARGIN, (int16_t)(152 + i * 26),
-                        320 - 2 * theme::MARGIN, 22};
+            ratR_[i] = {theme::MARGIN, (int16_t)(144 + i * 24), W, 20};
             ui::drawButton(g, ratR_[i], rat[i], i == curR);
         }
 
-        g.setTextDatum(textdatum_t::bottom_center);
-        g.setTextColor(theme::INK_DIM);
-        g.drawString("tap here to go back", 160, 238);
+        back_ = {(int16_t)(160 - 70), 214, 140, 24};
+        ui::drawButton(g, back_, "Back to the trail", true);
     }
 
     void onTap(int16_t x, int16_t y) override {
@@ -64,9 +60,9 @@ public:
                 return;
             }
         }
-        app::screens.pop();
+        if (back_.contains(x, y)) app::screens.pop();
     }
 
 private:
-    ui::Rect paceR_[3], ratR_[3];
+    ui::Rect paceR_[3], ratR_[3], back_{};
 };
