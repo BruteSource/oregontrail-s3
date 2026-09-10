@@ -1,0 +1,14 @@
+# PlatformIO
+.pio/
+.vscode/
+*.bin
+*.elf
+
+# Generated art — embedded MECC PNGs. Regenerate with:
+#   tools/gen_assets.py <path-to-cloned Maxwolf/OregonTrail>
+# (kept out of the repo so it doesn't redistribute the original artwork)
+src/art/gen/
+
+# scratch
+*.png
+!media/*.png
