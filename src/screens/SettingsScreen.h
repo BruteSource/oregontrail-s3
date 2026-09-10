@@ -1,5 +1,5 @@
-// Device settings: brightness, volume (placeholder), recalibrate, sleep,
-// restart, wipe the Top Five. Reachable from the main menu and the trail menu.
+// Device settings: brightness, volume, recalibrate, sleep, restart, wipe the
+// Top Five. Reachable from the main menu and the trail menu.
 #pragma once
 #include <Arduino.h>
 
@@ -7,6 +7,7 @@
 
 #include "SaveGame.h"
 #include "Settings.h"
+#include "hw/Audio.h"
 #include "hw/Battery.h"
 #include "screens/MessageScreen.h"
 #include "ui/App.h"
@@ -33,13 +34,8 @@ public:
                    (prefs::kBrightMax - prefs::kBrightMin),
                278, theme::INK);
 
-        // Volume — placeholder until a speaker is wired to the ES8311.
-        vMinus_ = vPlus_ = vBar_ = {};
-        g.setFont(&fonts::Font2);
-        g.setTextDatum(textdatum_t::middle_left);
-        g.setTextColor(theme::INK_DIM);
-        g.drawString("Volume", theme::MARGIN, 92 + 12);
-        g.drawString("--   (add a speaker to enable)", 96, 92 + 12);
+        slider(g, prefs::volume == 0 ? "Volume  (off)" : "Volume", 94,
+               vMinus_, vPlus_, vBar_, prefs::volume * 10, 278, theme::ACCENT);
 
         const int16_t W = 320 - 2 * theme::MARGIN, cw = (W - 8) / 2;
         const int16_t x2 = theme::MARGIN + cw + 8;
@@ -58,6 +54,8 @@ public:
     void onTap(int16_t x, int16_t y) override {
         if (bMinus_.contains(x, y)) bump(prefs::brightness, -prefs::kBrightStep);
         else if (bPlus_.contains(x, y)) bump(prefs::brightness, prefs::kBrightStep);
+        else if (vMinus_.contains(x, y)) bumpVol(-1);
+        else if (vPlus_.contains(x, y)) bumpVol(+1);
         else if (recal_.contains(x, y)) app::wantRecal = true;
         else if (sleep_.contains(x, y)) app::wantSleep = true;
         else if (restart_.contains(x, y)) app::wantRestart = true;
@@ -79,6 +77,20 @@ private:
         if (v > prefs::kBrightMax) v = prefs::kBrightMax;
         app::setBrightness(v);
         prefs::save();
+    }
+
+    void bumpVol(int d) {
+        int v = prefs::volume + d;
+        if (v < 0) v = 0;
+        if (v > prefs::kVolMax) v = prefs::kVolMax;
+        if (v == prefs::volume) return;
+        prefs::volume = v;
+        audio::setLevel(v);
+        prefs::save();
+        // short audible preview of the new level
+        static const audio::Note kBlip[] = {{784, 90}, {0, 30}, {1047, 120}};
+        if (v > 0 && !audio::songPlaying())
+            audio::playSong(kBlip, sizeof(kBlip) / sizeof(kBlip[0]));
     }
 
     static void slider(LGFX_Sprite& g, const char* label, int16_t y, ui::Rect& minus,

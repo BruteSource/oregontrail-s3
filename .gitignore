@@ -4,9 +4,9 @@
 *.bin
 *.elf
 
-# Generated art — embedded MECC PNGs. Regenerate with:
-#   tools/gen_assets.py <path-to-cloned Maxwolf/OregonTrail>
-# (kept out of the repo so it doesn't redistribute the original artwork)
+# Generated assets — embedded MECC PNGs and the decoded landmark music.
+# Regenerate with:  tools/gen_assets.py <path-to-cloned Maxwolf/OregonTrail>
+# (kept out of the repo so it doesn't redistribute the original art or music)
 src/art/gen/
 
 # scratch

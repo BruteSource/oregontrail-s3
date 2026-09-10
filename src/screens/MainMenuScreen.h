@@ -6,6 +6,7 @@
 #include <LovyanGFX.hpp>
 
 #include "SaveGame.h"
+#include "hw/Audio.h"
 #include "game/Sim.h"
 #include "screens/HighScoresScreen.h"
 #include "screens/MessageScreen.h"
@@ -21,6 +22,7 @@
 class MainMenuScreen : public Screen {
 public:
     void onEnter() override {
+        audio::stopSong();
         menu_.clear();
         act_.clear();
         auto row = [&](const char* label, int a) { menu_.add(label); act_.push_back(a); };

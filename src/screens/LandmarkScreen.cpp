@@ -1,6 +1,8 @@
 #include "screens/LandmarkScreen.h"
 
 #include "art/Art.h"
+#include "art/gen/music.h"
+#include "hw/Audio.h"
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "screens/Hud.h"
@@ -23,6 +25,11 @@ const char* flavorFor(const game::Node& n) {
 
 void LandmarkScreen::onEnter() {
     hasStore_ = game::sim.here().kind == game::Stop::Settlement;
+
+    // The stop's theme, once through. landmark[] is indexed like the paintings.
+    const int i = art::landmarkIndexForNode(game::sim.locIndex);
+    if (i >= 0 && i < 18)
+        audio::playSong(music::landmark[i].notes, music::landmark[i].len);
 }
 
 void LandmarkScreen::render(LGFX_Sprite& g) {

@@ -5,7 +5,7 @@
 namespace prefs {
 
 int brightness = 180;
-int volume = 0;
+int volume = 7;      // 0..10, mapped to the ES8311 DAC in hw/Audio
 
 namespace {
 constexpr char NS[] = "otrail_prefs";

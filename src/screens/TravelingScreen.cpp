@@ -1,6 +1,7 @@
 #include "screens/TravelingScreen.h"
 
 #include "art/Art.h"
+#include "hw/Audio.h"
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "screens/EventScreen.h"
@@ -9,6 +10,7 @@
 #include "screens/Hud.h"
 #include "screens/LandmarkScreen.h"
 #include "screens/MessageScreen.h"
+#include "screens/StuckScreen.h"
 #include "ui/App.h"
 #include "ui/ScreenStack.h"
 #include "ui/Theme.h"
@@ -18,6 +20,7 @@ constexpr uint32_t kDayMs = 650;   // one simulated day per beat
 }
 
 void TravelingScreen::onEnter() {
+    audio::stopSong();   // the party is moving again — drop any landmark theme
     accum_ = 0;
     halted_ = false;
     note_ = "";
@@ -60,8 +63,7 @@ void TravelingScreen::tick(uint32_t dtMs) {
             break;
         case game::TurnResult::Blocked:
             halted_ = true;
-            app::screens.replace(new MessageScreen(
-                "Stuck", "The team can't pull the wagon. You need oxen."));
+            app::screens.replace(new StuckScreen());
             break;
     }
 }

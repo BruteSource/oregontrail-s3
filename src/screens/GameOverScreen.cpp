@@ -2,6 +2,8 @@
 
 #include "SaveGame.h"
 #include "art/Art.h"
+#include "art/gen/music.h"
+#include "hw/Audio.h"
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "screens/HighScoresScreen.h"
@@ -15,6 +17,11 @@ void GameOverScreen::onEnter() {
     rank_ = savegame::submitHighScore(game::g.party.leader().name, score_.total,
                                       (uint16_t)game::sim.turns, won_);
     savegame::clear();   // the journey is over
+
+    if (won_)
+        audio::playSong(music::landmark[17].notes, music::landmark[17].len);
+    else
+        audio::playSong(music::tombstone.notes, music::tombstone.len);
 }
 
 void GameOverScreen::render(LGFX_Sprite& g) {

@@ -11,6 +11,7 @@
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "game/Store.h"
+#include "art/gen/music.h"
 #include "hw/Audio.h"
 #include "hw/Battery.h"
 #include "hw/Display.h"
@@ -139,6 +140,7 @@ void setup() {
 
     battery::begin();
     audio::begin();
+    audio::setLevel(prefs::volume);
     game::seedRng(esp_random());
 
     app::screens.reset(new TitleScreen());
@@ -184,6 +186,7 @@ void loop() {
             case 'T': {   // "T<x>,<y>" — inject a synthetic tap (dev/testing)
                 const long tx = Serial.parseInt();
                 const long ty = Serial.parseInt();
+                audio::click();
                 app::screens.dispatchTap((int16_t)tx, (int16_t)ty);
                 break;
             }
@@ -254,6 +257,15 @@ void loop() {
                 Serial.printf("[audio] test chime (ready=%d)\n", audio::ready());
                 audio::testChime();
                 break;
+            case 'M': {   // "M<n>" — dev: play landmark song n (n<0 = tombstone)
+                const long n = Serial.parseInt();
+                if (n < 0 || n >= 18)
+                    audio::playSong(music::tombstone.notes, music::tombstone.len);
+                else
+                    audio::playSong(music::landmark[n].notes, music::landmark[n].len);
+                Serial.printf("[audio] play song %ld\n", n);
+                break;
+            }
             case 'x': game::eventsEnabled = false; Serial.println("[dev] events off"); break;
             case 'X': game::eventsEnabled = true;  Serial.println("[dev] events on");  break;
             case 'A':   // dev: fast-forward to the next arrival / fork / river
@@ -279,7 +291,17 @@ void loop() {
     if (p.down) { app::screens.dispatchTouchMove(p.x, p.y); s_lastTouch = now; }
     else if (s_wasDown) app::screens.dispatchTouchEnd();
     s_wasDown = p.down;
-    if (p.pressed) { app::screens.dispatchTap(p.x, p.y); s_lastTouch = now; }
+    // Debounce: the FT6336 sometimes reports a momentary release + re-touch,
+    // which lands as two taps (double-press, double click sound). Ignore a new
+    // tap that arrives right on the heels of the last one.
+    static uint32_t s_lastTap = 0;
+    constexpr uint32_t kTapDebounceMs = 220;
+    if (p.pressed && now - s_lastTap >= kTapDebounceMs) {
+        s_lastTap = now;
+        audio::click();
+        app::screens.dispatchTap(p.x, p.y);
+        s_lastTouch = now;
+    }
 
     app::screens.update(dt, frame);
     if (s_haveSprite) {

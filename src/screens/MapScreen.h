@@ -53,6 +53,15 @@ public:
             g.fillCircle(markX, 40, 2, theme::WARN);
         }
 
+        // back affordance — top-left, over the map
+        back_ = {4, 4, 62, 22};
+        g.fillRoundRect(back_.x, back_.y, back_.w, back_.h, 4, theme::PANEL);
+        g.drawRoundRect(back_.x, back_.y, back_.w, back_.h, 4, theme::FRAME);
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(textdatum_t::middle_center);
+        g.setTextColor(theme::INK);
+        g.drawString("< Back", back_.x + back_.w / 2, back_.y + back_.h / 2 + 1);
+
         // pan arrows
         left_  = {0, 40, 26, 52};
         right_ = {294, 40, 26, 52};
@@ -97,13 +106,14 @@ public:
     }
 
     void onTap(int16_t x, int16_t y) override {
-        if (left_.contains(x, y))       { pan_ -= 90; return; }
-        if (right_.contains(x, y))      { pan_ += 90; return; }
+        if (back_.contains(x, y))  { app::screens.pop(); return; }
+        if (left_.contains(x, y))  { pan_ -= 90; return; }
+        if (right_.contains(x, y)) { pan_ += 90; return; }
         app::screens.pop();
     }
 
 private:
     int      pan_ = 0;
     uint32_t blink_ = 0;
-    ui::Rect left_{}, right_{};
+    ui::Rect left_{}, right_{}, back_{};
 };

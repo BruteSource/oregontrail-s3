@@ -5,6 +5,8 @@
 #include <LovyanGFX.hpp>
 
 #include "art/Art.h"
+#include "art/gen/music.h"
+#include "hw/Audio.h"
 #include "screens/MainMenuScreen.h"
 #include "ui/App.h"
 #include "ui/Screen.h"
@@ -14,6 +16,14 @@
 
 class TitleScreen : public Screen {
 public:
+    // No dedicated title theme in the MECC set — loop one of the landmark tunes
+    // under the opening card until the player taps through.
+    static constexpr int kTitleSong = 14;   // 14 = Blue Mountains
+    void onEnter() override {
+        audio::playSong(music::landmark[kTitleSong].notes,
+                        music::landmark[kTitleSong].len, true);
+    }
+
     void tick(uint32_t dtMs) override { blinkMs_ += dtMs; }
 
     void render(LGFX_Sprite& g) override {

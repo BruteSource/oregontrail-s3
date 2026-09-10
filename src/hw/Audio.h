@@ -2,27 +2,44 @@
 // Enable pin GPIO1 = LOW (target ref §5g / §12). Register init and the I2S
 // config are the working values from the "Debugging the S3" Axel-F sketch.
 //
-// Audio is otherwise parked for this project — this is just enough to prove the
-// speaker is wired and to hang landmark jingles off later.
+// Playback runs on its own FreeRTOS task: playSong() just hands over a note
+// list, stopSong() / a new playSong() cut the current one off between notes.
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 
 namespace audio {
 
-// Enable the codec/amp, run the ES8311 register init, install the I2S driver.
-// Safe to call after touch::begin() (shares Wire). Returns false if the ES8311
-// did not ACK on I2C.
-bool begin();
+// One monophonic note. hz == 0 is a rest. Matches the {hz, ms} pairs decoded in
+// the OregonTrail repo's music/*.json (see tools/gen_assets.py -> music.{h,cpp}).
+struct Note {
+    uint16_t hz;
+    uint16_t ms;
+};
 
+// Enable the codec/amp, run the ES8311 register init, install I2S, start the
+// playback task. Safe after touch::begin() (shares Wire). false = no I2C ACK.
+bool begin();
 bool ready();
 
-// 0x00 (silent) .. 0xFF (max). Persisted value lives in prefs::volume as 0..10.
-void setVolume(uint8_t reg);
+// Volume 0..10 (0 = silent). Maps to the ES8311 DAC register, clamped to a
+// per-speaker ceiling below the level that clips on this board.
+void setLevel(int level);
+int  level();
 
-// Blocking sine tone. freqHz 50..8000, durationMs up to a few seconds.
-void playTone(float freqHz, int durationMs);
+void setMuted(bool m);
+bool muted();
 
-// A short three-note rising arpeggio — the "is the speaker alive?" check.
+// Hand the player a note list. Returns immediately; the task plays it. A second
+// call replaces whatever is playing. `notes` must outlive playback (flash data).
+void playSong(const Note* notes, size_t count, bool loop = false);
+void stopSong();
+bool songPlaying();
+
+// A short UI tick, played over the top of any music. Cheap to call on every tap.
+void click();
+
+// Short built-in flourish — the "is the speaker alive?" check (dev serial 'B').
 void testChime();
 
 }  // namespace audio
