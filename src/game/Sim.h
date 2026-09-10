@@ -42,6 +42,7 @@ struct Sim {
     bool    tollPaid = false;
 
     int       lastMiles = 0;
+    bool      oxStarved = false;   // an ox died of hunger this turn
     char      lastNews[64] = {0};
     GameEvent pendingEvent;
 

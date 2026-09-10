@@ -38,6 +38,21 @@ void TravelingScreen::tick(uint32_t dtMs) {
     const game::TurnResult r = game::sim.takeTurn();
     if (game::sim.lastNews[0]) note_ = game::sim.lastNews;
 
+    // An ox starving is easy to miss in the day-by-day scroll — pull up to the
+    // trail menu so the player actually sees it and can react (hunt, rest,
+    // change rations, push on).
+    if (game::sim.oxStarved && r == game::TurnResult::Traveled) {
+        halted_ = true;
+        const bool none = game::g.vehicle.oxen == 0;
+        app::screens.replace(new MessageScreen(
+            none ? "The last ox is gone" : "An ox has died",
+            none ? "With no food, the last ox has starved. The wagon can't roll "
+                   "without a team. Hunt, or make for a settlement."
+                 : "With no food in the wagon, an ox has starved. Feed the team "
+                   "soon or you will lose them all."));
+        return;
+    }
+
     switch (r) {
         case game::TurnResult::Traveled:
             break;

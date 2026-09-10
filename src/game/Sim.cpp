@@ -201,8 +201,10 @@ void Sim::liveTheDay(bool traveling) {
 
     if (v.food <= 0 && v.oxen > 0) {
         v.oxen -= 1;
-        if (!lastNews[0])
-            snprintf(lastNews, sizeof(lastNews), "An ox starved for want of food.");
+        oxStarved = true;
+        snprintf(lastNews, sizeof(lastNews),
+                 v.oxen == 0 ? "The last ox has starved."
+                             : "An ox starved for want of food.");
     }
 }
 
@@ -223,6 +225,7 @@ void Sim::onArrive() {
 }
 
 TurnResult Sim::takeTurn() {
+    oxStarved = false;
     if (atOregon()) return TurnResult::ReachedOregon;
 
     if (here().kind == Stop::Fork && !departed && needBranch)

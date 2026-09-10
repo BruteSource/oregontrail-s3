@@ -133,6 +133,41 @@ static void test_dead_stay_dead() {
     TEST_ASSERT_TRUE(sawDeath);
 }
 
+// Run out of food and the oxen starve one per day — and every one of those
+// deaths must raise sim.oxStarved on the turn it happens (that's the flag the
+// travel screen halts on) and post news, so the player is never blindsided by
+// the "stuck, no oxen" screen.
+static void test_ox_starvation_is_announced() {
+    seedRng(42);
+    outfit(0, Pace::Steady, Rations::FillingRation);
+    g.vehicle.food = 0;
+    const int startOxen = g.vehicle.oxen;
+    sim.begin();
+
+    int deathsSeen = 0;
+    for (int i = 0; i < 400; ++i) {
+        const int oxenBefore = g.vehicle.oxen;
+        TurnResult r = sim.takeTurn();
+
+        if (g.vehicle.oxen < oxenBefore) {
+            // an ox died this turn -> it must have been flagged and reported
+            TEST_ASSERT_EQUAL_INT(oxenBefore - 1, g.vehicle.oxen);  // one per day
+            TEST_ASSERT_TRUE(sim.oxStarved);
+            TEST_ASSERT_TRUE(sim.lastNews[0] != 0);
+            ++deathsSeen;
+        } else {
+            TEST_ASSERT_FALSE(sim.oxStarved);   // no false alarms
+        }
+
+        if (r == TurnResult::Blocked) {
+            TEST_ASSERT_EQUAL_INT(0, g.vehicle.oxen);
+            break;
+        }
+        if (r == TurnResult::PartyWiped) break;
+    }
+    TEST_ASSERT_EQUAL_INT(startOxen, deathsSeen);   // saw every ox go
+}
+
 // No oxen -> the wagon cannot move.
 static void test_no_oxen_blocks() {
     seedRng(1);
@@ -149,6 +184,7 @@ int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_full_playthrough);
     RUN_TEST(test_dead_stay_dead);
+    RUN_TEST(test_ox_starvation_is_announced);
     RUN_TEST(test_no_oxen_blocks);
     return UNITY_END();
 }

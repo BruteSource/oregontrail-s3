@@ -1,6 +1,8 @@
-// The MECC route map at full resolution, scrolled to the party's position (the
-// whole 640-wide map won't fit, so we show a window and let you pan it). A
-// compact stop list sits below.
+// The MECC route map, zoomed in and kept centred on the party. The little red
+// cross marks "you are here" at the landmark's real pixel spot on the DOS
+// map.png (coords fitted by the reference project in OriginalTrail.cs). A
+// compact stop list sits below-left; the < > arrows pan the map to look
+// ahead/back; a tap anywhere else returns to the trail.
 #pragma once
 #include <Arduino.h>
 
@@ -18,59 +20,70 @@
 
 class MapScreen : public Screen {
 public:
-    static constexpr int MAP_W = 640, MAP_H = 200, VIEW_H = 132;
+    static constexpr int   MAP_W = 640, MAP_H = 200, VIEW_H = 132;
+    static constexpr float Z = 2.0f;                 // map zoom
+    static constexpr int   WIN_W = (int)(320 / Z);   // source px shown across
+    static constexpr int   WIN_H = (int)(VIEW_H / Z);
 
-    void onEnter() override {
-        // START (Independence) sits at the right edge of the map, FINISH at the
-        // left; progress west moves the view leftward.
-        pan_ = (int)((1.0f - progress()) * (MAP_W - 320));
-        blink_ = 0;
+    // Landmark positions on the 640x200 map.png, node-for-node with game/Trail
+    // (from the reference project's OriginalTrail.cs MapX/MapY table).
+    static void nodeXY(int node, int* mx, int* my) {
+        static const uint16_t X[20] = {578, 565, 546, 503, 462, 415, 372, 338,
+                                       305, 319, 292, 257, 217, 195, 166, 161,
+                                       140, 126, 128, 108};
+        static const uint16_t Y[20] = {148, 153, 137, 134, 130, 123, 111, 117,
+                                       136, 117, 116, 108, 111, 86,  72,  58,
+                                       63,  65,  60,  57};
+        const int i = node < 0 ? 0 : node > 19 ? 19 : node;
+        *mx = X[i];
+        *my = Y[i];
     }
 
-    // 0 at Independence .. 1 at Oregon City, by trail node.
-    static float progress() {
-        int n;
-        game::trailNodes(&n);
-        return n > 1 ? (float)game::sim.locIndex / (n - 1) : 0;
+    void onEnter() override {
+        panNudge_ = 0;
+        blink_ = 0;
     }
 
     void tick(uint32_t dtMs) override { blink_ += dtMs; }
 
     void render(LGFX_Sprite& g) override {
         g.fillScreen(theme::BG);
-        if (pan_ < 0) pan_ = 0;
-        if (pan_ > MAP_W - 320) pan_ = MAP_W - 320;
-
-        // draw at (0,0), clip 320xVIEW_H, read starting from source column pan_
-        g.drawPng(art::map_img, art::map_img_len, 0, 0, 320, VIEW_H, pan_, 0);
-
-        // "you are here" marker — interpolate the stop's x along the map
         const game::Sim& s = game::sim;
-        const int markX = (int)(600 - progress() * 560) - pan_;
-        if ((blink_ / 400) % 2 == 0 && markX > -6 && markX < 326) {
-            g.drawLine(markX - 6, 40, markX + 6, 40, theme::WARN);
-            g.drawLine(markX, 34, markX, 46, theme::WARN);
-            g.fillCircle(markX, 40, 2, theme::WARN);
-        }
 
-        // back affordance — top-left, over the map
-        back_ = {4, 4, 62, 22};
-        g.fillRoundRect(back_.x, back_.y, back_.w, back_.h, 4, theme::PANEL);
-        g.drawRoundRect(back_.x, back_.y, back_.w, back_.h, 4, theme::FRAME);
-        g.setFont(&fonts::Font2);
-        g.setTextDatum(textdatum_t::middle_center);
-        g.setTextColor(theme::INK);
-        g.drawString("< Back", back_.x + back_.w / 2, back_.y + back_.h / 2 + 1);
+        int mx, my;
+        nodeXY(s.locIndex, &mx, &my);
 
-        // pan arrows
-        left_  = {0, 40, 26, 52};
-        right_ = {294, 40, 26, 52};
-        if (pan_ > 0) {
-            g.fillTriangle(6, 66, 20, 56, 20, 76, theme::ACCENT);
-        }
-        if (pan_ < MAP_W - 320) {
-            g.fillTriangle(314, 66, 300, 56, 300, 76, theme::ACCENT);
-        }
+        // source window, centred on the party, clamped to the image
+        int srcX = mx - WIN_W / 2 + panNudge_;
+        int srcY = my - WIN_H / 2;
+        if (srcX < 0) srcX = 0;
+        if (srcX > MAP_W - WIN_W) srcX = MAP_W - WIN_W;
+        if (srcY < 0) srcY = 0;
+        if (srcY > MAP_H - WIN_H) srcY = MAP_H - WIN_H;
+
+        // NB: drawPng's offX/offY are in *scaled* (destination) pixels, not
+        // source pixels — so the pan offset is srcX * Z.
+        g.drawPng(art::map_img, art::map_img_len, 0, 0, 320, VIEW_H,
+                  (int)(srcX * Z), (int)(srcY * Z), Z, Z);
+
+        // "you are here" — solid red cross at the landmark's spot, with a ring
+        // that pulses so it catches the eye without ever vanishing.
+        const int markX = (int)((mx - srcX) * Z);
+        const int markY = (int)((my - srcY) * Z);
+        g.drawLine(markX - 8, markY, markX + 8, markY, theme::WARN);
+        g.drawLine(markX - 8, markY + 1, markX + 8, markY + 1, theme::WARN);
+        g.drawLine(markX, markY - 8, markX, markY + 8, theme::WARN);
+        g.drawLine(markX + 1, markY - 8, markX + 1, markY + 8, theme::WARN);
+        g.drawCircle(markX, markY, (blink_ / 350) % 2 ? 4 : 6, theme::WARN);
+
+        // pan arrows (look west / east along the trail)
+        left_  = {0, VIEW_H / 2 - 26, 30, 52};
+        right_ = {290, VIEW_H / 2 - 26, 30, 52};
+        const int cy = VIEW_H / 2;
+        if (srcX > 0)
+            g.fillTriangle(8, cy, 22, cy - 10, 22, cy + 10, theme::ACCENT);
+        if (srcX < MAP_W - WIN_W)
+            g.fillTriangle(312, cy, 298, cy - 10, 298, cy + 10, theme::ACCENT);
 
         // compact stop list
         g.drawFastHLine(0, VIEW_H, 320, theme::FRAME);
@@ -97,6 +110,14 @@ public:
                                     theme::ACCENT);
         }
 
+        // back hint — in the empty space to the right of the stop list
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(textdatum_t::middle_right);
+        g.setTextColor(theme::ACCENT);
+        g.drawString("tap here", 312, VIEW_H + 46);
+        g.setTextColor(theme::INK_DIM);
+        g.drawString("to go back", 312, VIEW_H + 62);
+
         char foot[44];
         snprintf(foot, sizeof(foot), "%d mi done   -   ~%d to Oregon", s.odometer(),
                  s.milesRemaining());
@@ -106,14 +127,13 @@ public:
     }
 
     void onTap(int16_t x, int16_t y) override {
-        if (back_.contains(x, y))  { app::screens.pop(); return; }
-        if (left_.contains(x, y))  { pan_ -= 90; return; }
-        if (right_.contains(x, y)) { pan_ += 90; return; }
+        if (left_.contains(x, y))  { panNudge_ -= 60; return; }
+        if (right_.contains(x, y)) { panNudge_ += 60; return; }
         app::screens.pop();
     }
 
 private:
-    int      pan_ = 0;
+    int      panNudge_ = 0;   // source-px offset from the auto-centred view
     uint32_t blink_ = 0;
-    ui::Rect left_{}, right_{}, back_{};
+    ui::Rect left_{}, right_{};
 };
