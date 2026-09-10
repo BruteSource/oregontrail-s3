@@ -19,16 +19,16 @@ class SettingsScreen : public Screen {
 public:
     void render(LGFX_Sprite& g) override {
         g.fillScreen(theme::BG);
-        ui::drawCentered(g, "SETTINGS", 160, 8, theme::ACCENT, 4);
+        ui::drawCentered(g, "SETTINGS", 160, 6, theme::ACCENT, 4);
 
         char b[44];
         const int chg = battery::charging();
         snprintf(b, sizeof(b), "Battery %d%%  %.2fV%s", battery::percent(),
                  battery::volts(),
                  chg == 1 ? "  charging" : chg == 0 ? "  full" : "");
-        ui::drawCentered(g, b, 160, 40, theme::INK_DIM, 2);
+        ui::drawCentered(g, b, 160, 34, theme::INK_DIM, 2);
 
-        slider(g, "Brightness", 56, bMinus_, bPlus_, bBar_,
+        slider(g, "Brightness", 62, bMinus_, bPlus_, bBar_,
                (prefs::brightness - prefs::kBrightMin) * 100 /
                    (prefs::kBrightMax - prefs::kBrightMin),
                278, theme::INK);

@@ -51,8 +51,13 @@ bool ftRaw(int16_t* rx, int16_t* ry) {
 }
 
 // Raw -> landscape screen coords. Native Y drives screen X, native X drives
-// screen Y (rotation 1). Edge nudge (gridiron): near an edge the contact patch
-// pulls toward centre, so edge targets get missed — push those taps back out.
+// screen Y (rotation 1).
+//
+// Edge nudge: gridiron only nudges its *long* (320 px) axis and leaves the
+// short axis untouched — that's the proven-good behaviour. In landscape our
+// long axis is screen X, so mirror gridiron exactly there and do NOT nudge
+// screen Y. (An earlier port added a Y nudge gridiron never had; that was what
+// pushed taps off the bottom-row buttons on the crowded menus.)
 bool readPoint(int16_t* sx, int16_t* sy) {
     int16_t rx, ry;
     if (!ftRaw(&rx, &ry)) return false;
@@ -60,12 +65,10 @@ bool readPoint(int16_t* sx, int16_t* sy) {
     long x = map(ry, s_cal.sxAtLeft, s_cal.sxAtRight, 0, OT_W);
     long y = map(rx, s_cal.syAtTop, s_cal.syAtBottom, 0, OT_H);
 
-    // Outward nudge near an edge: the contact patch pulls the reported point
-    // toward centre so edge targets get missed. (gridiron readPoint, scaled.)
-    if (y < 40)             y -= (40 - y) / 4;
-    else if (y > OT_H - 41) y += (y - (OT_H - 41)) / 4;
-    if (x < 40)             x -= (40 - x) / 4;
-    else if (x > OT_W - 41) x += (x - (OT_W - 41)) / 4;
+    // Near an edge the contact patch pulls toward centre (gridiron readPoint):
+    // up to ~12 px outward in the outer ~48 px of the long axis only.
+    if (x < 48)             x -= (48 - x) / 4;
+    else if (x > OT_W - 49) x += (x - (OT_W - 49)) / 4;
 
     *sx = (int16_t)constrain(x, 0, OT_W - 1);
     *sy = (int16_t)constrain(y, 0, OT_H - 1);
