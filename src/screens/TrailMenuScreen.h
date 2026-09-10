@@ -16,6 +16,6 @@ public:
 
 private:
     ui::Rect go_{}, supplies_{}, map_{}, paceRations_{}, rest_{};
-    ui::Rect hunt_{}, talk_{}, abandon_{};
+    ui::Rect hunt_{}, talk_{}, settings_{}, abandon_{};
     bool     showHunt_ = false, showTalk_ = false;
 };

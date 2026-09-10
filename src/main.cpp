@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <esp_random.h>
 
+#include "Settings.h"
 #include "game/Session.h"
 #include "game/Sim.h"
 #include "game/Store.h"
@@ -30,15 +31,16 @@
 #include "screens/TitleScreen.h"
 #include "screens/TrailMenuScreen.h"
 
+static LGFX        lcd;
+static LGFX_Sprite frame(&lcd);
+
 namespace app {
 ScreenStack screens;
 bool wantRecal = false;
 bool wantSleep = false;
 bool wantRestart = false;
+void setBrightness(int level) { lcd.setBrightness(level); }
 }
-
-static LGFX        lcd;
-static LGFX_Sprite frame(&lcd);
 
 static uint32_t s_lastFrame = 0;
 static uint32_t s_lastTouch = 0;
@@ -73,7 +75,7 @@ static void enterStandby() {
     }
 
     Serial.println("[power] wake");
-    lcd.setBrightness(200);
+    lcd.setBrightness(prefs::brightness);
     touch::busResume();
     for (uint32_t t = millis(); touch::isTouched() && millis() - t < 2000;)
         delay(20);                 // swallow the wake tap
@@ -102,7 +104,8 @@ void setup() {
 
     lcd.init();
     lcd.setRotation(OT_ROTATION);
-    lcd.setBrightness(200);
+    prefs::load();
+    lcd.setBrightness(prefs::brightness);
     lcd.fillScreen(TFT_BLACK);
 
     storage::begin();

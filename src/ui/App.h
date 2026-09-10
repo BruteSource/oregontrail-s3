@@ -12,4 +12,6 @@ extern ScreenStack screens;
 extern bool wantRecal;    // blocking touch recalibration
 extern bool wantSleep;    // backlight-off standby until a tap
 extern bool wantRestart;  // ESP.restart()
+
+void setBrightness(int level);   // apply to the panel now (0..255)
 }

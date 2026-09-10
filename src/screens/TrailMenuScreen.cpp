@@ -12,6 +12,7 @@
 #include "screens/PaceRationsScreen.h"
 #include "screens/RestScreen.h"
 #include "screens/RiverScreen.h"
+#include "screens/SettingsScreen.h"
 #include "screens/SuppliesScreen.h"
 #include "screens/TravelingScreen.h"
 #include "ui/App.h"
@@ -84,9 +85,11 @@ void TrailMenuScreen::render(LGFX_Sprite& g) {
         ui::drawButton(g, talk_, "Talk to people");
     }
 
-    // give up — a real button, bottom, kept visually calm
-    abandon_ = {theme::MARGIN, 210, W, 26};
-    ui::drawButton(g, abandon_, "Give up and turn back");
+    // utilities row: settings + give up
+    settings_ = {theme::MARGIN, 210, colW, 26};
+    abandon_  = {x2,            210, colW, 26};
+    ui::drawButton(g, settings_, "Settings");
+    ui::drawButton(g, abandon_, "Give up");
 }
 
 void TrailMenuScreen::onTap(int16_t x, int16_t y) {
@@ -106,6 +109,8 @@ void TrailMenuScreen::onTap(int16_t x, int16_t y) {
     } else if (talk_.w && talk_.contains(x, y)) {
         app::screens.push(new MessageScreen(game::sim.here().name,
                                             game::randomAdvice()));
+    } else if (settings_.contains(x, y)) {
+        app::screens.push(new SettingsScreen());
     } else if (abandon_.contains(x, y)) {
         app::screens.push(new AbandonScreen());
     }
