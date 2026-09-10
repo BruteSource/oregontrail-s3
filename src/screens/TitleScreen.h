@@ -18,17 +18,21 @@ public:
 
     void render(LGFX_Sprite& g) override {
         g.fillScreen(0x0000);
-        g.drawPng(art::banner_img, art::banner_img_len, 0, 24);
-        g.drawPng(art::family_img, art::family_img_len, 0, 96);
+        g.drawPng(art::banner_img, art::banner_img_len, 0, 14);
+        // family scene ~0.78x, centred
+        g.drawPng(art::family_img, art::family_img_len, 30, 82, 0, 0, 0, 0,
+                  0.78f, 0.78f);
 
         g.setFont(&fonts::Font2);
         g.setTextDatum(textdatum_t::top_center);
+
         if ((blinkMs_ / 600) % 2 == 0) {
             g.setTextColor(theme::ACCENT);
-            g.drawString("tap to begin", 160, 214);
+            g.drawString("tap to begin", 160, 190);
         }
         g.setTextColor(theme::INK_DIM);
-        g.drawString("artwork from the 1990 MECC edition", 160, 230);
+        g.drawString("artwork from the 1990 MECC edition", 160, 210);
+        g.drawString("Vibecoded with Claude by BruteSource", 160, 224);
     }
 
     void onTap(int16_t, int16_t) override {

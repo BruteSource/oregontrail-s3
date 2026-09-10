@@ -1,11 +1,12 @@
-// Change the travelling pace or the food rations. One screen, two modes.
-// (ChangePace.cs / ChangeRations.cs)
+// Set the travelling pace and the food ration in one place. (ChangePace.cs /
+// ChangeRations.cs)
 #pragma once
 #include <Arduino.h>
 
 #include <LovyanGFX.hpp>
 
 #include "game/Session.h"
+#include "screens/Hud.h"
 #include "ui/App.h"
 #include "ui/Screen.h"
 #include "ui/ScreenStack.h"
@@ -14,43 +15,58 @@
 
 class PaceRationsScreen : public Screen {
 public:
-    explicit PaceRationsScreen(bool pace) : pace_(pace) {}
-
-    void onEnter() override {
-        menu_.clear();
-        if (pace_) {
-            menu_.add("Steady - the normal pace");
-            menu_.add("Strenuous - 50% more miles a day");
-            menu_.add("Grueling - double miles, hard on all");
-        } else {
-            menu_.add("Filling - 3 lb each, keeps spirits up");
-            menu_.add("Meager - 2 lb each, wears a little");
-            menu_.add("Bare bones - 1 lb each, wears hard");
-        }
-        menu_.setBounds(theme::MARGIN, 70, 320 - 2 * theme::MARGIN, 40);
-    }
-
     void render(LGFX_Sprite& g) override {
         g.fillScreen(theme::BG);
-        ui::drawCentered(g, pace_ ? "TRAVELLING PACE" : "FOOD RATIONS", 160, 14,
-                         theme::ACCENT, 4);
-        String cur = pace_ ? String("Now: ") + game::paceName(game::g.vehicle.pace)
-                           : String("Now: ") + game::rationsName(game::g.vehicle.rations);
-        ui::drawCentered(g, cur, 160, 46, theme::INK_DIM, 2);
-        int sel = pace_ ? static_cast<int>(game::g.vehicle.pace)
-                        : static_cast<int>(game::g.vehicle.rations);
-        menu_.render(g, sel);
+        hud::drawTrailStatus(g);
+
+        g.setFont(&fonts::Font2);
+        g.setTextDatum(textdatum_t::top_left);
+
+        static const char* pace[3] = {"Steady - normal pace",
+                                      "Strenuous - 50% more a day",
+                                      "Grueling - double, hard on all"};
+        static const char* rat[3] = {"Filling - 3 lb each",
+                                     "Meager - 2 lb each",
+                                     "Bare bones - 1 lb each"};
+
+        g.setTextColor(theme::ACCENT);
+        g.drawString("TRAVELLING PACE", theme::MARGIN, 26);
+        const int curP = static_cast<int>(game::g.vehicle.pace);
+        for (int i = 0; i < 3; ++i) {
+            paceR_[i] = {theme::MARGIN, (int16_t)(42 + i * 30),
+                         320 - 2 * theme::MARGIN, 26};
+            ui::drawButton(g, paceR_[i], pace[i], i == curP);
+        }
+
+        g.setTextColor(theme::ACCENT);
+        g.setTextDatum(textdatum_t::top_left);
+        g.drawString("FOOD RATIONS", theme::MARGIN, 136);
+        const int curR = static_cast<int>(game::g.vehicle.rations);
+        for (int i = 0; i < 3; ++i) {
+            ratR_[i] = {theme::MARGIN, (int16_t)(152 + i * 26),
+                        320 - 2 * theme::MARGIN, 22};
+            ui::drawButton(g, ratR_[i], rat[i], i == curR);
+        }
+
+        g.setTextDatum(textdatum_t::bottom_center);
+        g.setTextColor(theme::INK_DIM);
+        g.drawString("tap here to go back", 160, 238);
     }
 
     void onTap(int16_t x, int16_t y) override {
-        const int i = menu_.hitTest(x, y);
-        if (i < 0) return;
-        if (pace_) game::g.vehicle.pace = static_cast<game::Pace>(i);
-        else       game::g.vehicle.rations = static_cast<game::Rations>(i);
+        for (int i = 0; i < 3; ++i) {
+            if (paceR_[i].contains(x, y)) {
+                game::g.vehicle.pace = static_cast<game::Pace>(i);
+                return;
+            }
+            if (ratR_[i].contains(x, y)) {
+                game::g.vehicle.rations = static_cast<game::Rations>(i);
+                return;
+            }
+        }
         app::screens.pop();
     }
 
 private:
-    bool pace_;
-    ui::MenuList menu_;
+    ui::Rect paceR_[3], ratR_[3];
 };

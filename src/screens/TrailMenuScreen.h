@@ -1,9 +1,7 @@
-// The hub while on the trail. Shows where the party is and offers the day-to-day
-// choices (Travel.cs command menu): press on, check supplies, look at the map,
-// change pace or rations, rest. Talk-to-people appears at settlements/landmarks.
+// The hub while on the trail — big touch buttons: press on, plus supplies, map,
+// pace & rations, rest, and (in context) hunt / talk. (Travel.cs command menu.)
 #pragma once
 #include <Arduino.h>
-#include <vector>
 
 #include <LovyanGFX.hpp>
 
@@ -17,7 +15,7 @@ public:
     void onTap(int16_t x, int16_t y) override;
 
 private:
-    ui::MenuList      menu_;
-    std::vector<int>  act_;   // action id per visible row
-    void rebuildMenu();
+    ui::Rect go_{}, supplies_{}, map_{}, paceRations_{}, rest_{};
+    ui::Rect hunt_{}, talk_{}, abandon_{};
+    bool     showHunt_ = false, showTalk_ = false;
 };
