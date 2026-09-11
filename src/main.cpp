@@ -253,6 +253,20 @@ void loop() {
                 }
                 break;
             }
+            case 'V': {   // "V" prints the battery reading; "V<volts>" calibrates
+                const float trueV = Serial.parseFloat();
+                if (trueV > 2.5f) {
+                    const float d = battery::calibrate(trueV);
+                    Serial.printf("[bat] calibrated to %.2fV -> divider %.4f\n",
+                                  trueV, d);
+                } else {
+                    Serial.printf("[bat] raw %.3fV  smoothed %.3fV  %d%%  "
+                                  "divider %.4f\n",
+                                  battery::rawVolts(), battery::volts(),
+                                  battery::percent(), battery::divider());
+                }
+                break;
+            }
             case 'B':   // dev: play the audio test chime
                 Serial.printf("[audio] test chime (ready=%d)\n", audio::ready());
                 audio::testChime();

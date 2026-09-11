@@ -1,29 +1,44 @@
 #include "hw/Battery.h"
 
 #include <Arduino.h>
+#include <Preferences.h>
 
 namespace battery {
 
 namespace {
-constexpr int   BAT_ADC_PIN = 9;
-constexpr float BAT_DIVIDER  = 1.955f;   // calibrate per unit (target ref §9)
-constexpr float BAT_OFFSET   = 0.0f;
+constexpr int   BAT_ADC_PIN     = 9;
+constexpr float BAT_DIVIDER_DEF  = 1.955f;   // nominal; trimmed by calibrate()
+constexpr float BAT_OFFSET       = 0.0f;
+constexpr char  NVS_NS[]         = "otrail_bat";
 
+float    s_divider = BAT_DIVIDER_DEF;
 float    s_v = 3.9f;
 float    s_hist[10];
 int      s_hi = 0;
 bool     s_histFull = false;
 uint32_t s_lastRead = 0, s_lastSample = 0;
 
-float readRaw() {
+float adcMillivolts() {
     uint32_t sum = 0;
     for (int i = 0; i < 24; i++) sum += analogReadMilliVolts(BAT_ADC_PIN);
-    return (sum / 24.0f / 1000.0f) * BAT_DIVIDER + BAT_OFFSET;
+    return sum / 24.0f;
+}
+
+float readRaw() {
+    return (adcMillivolts() / 1000.0f) * s_divider + BAT_OFFSET;
 }
 }  // namespace
 
 void begin() {
     analogSetPinAttenuation(BAT_ADC_PIN, ADC_11db);
+
+    Preferences p;
+    if (p.begin(NVS_NS, true)) {
+        const float d = p.getFloat("div", 0.0f);
+        if (d > 1.0f && d < 4.0f) s_divider = d;
+        p.end();
+    }
+
     s_v = readRaw();
     for (float& h : s_hist) h = s_v;
 }
@@ -44,7 +59,28 @@ void update() {
     }
 }
 
-float volts() { return s_v; }
+float volts()    { return s_v; }
+float rawVolts() { return readRaw(); }
+float divider()  { return s_divider; }
+
+float calibrate(float trueVolts) {
+    if (trueVolts < 2.5f || trueVolts > 4.5f) return 0.0f;
+    const float mv = adcMillivolts();
+    if (mv < 100.0f) return 0.0f;
+    s_divider = (trueVolts - BAT_OFFSET) / (mv / 1000.0f);
+
+    Preferences p;
+    if (p.begin(NVS_NS, false)) {
+        p.putFloat("div", s_divider);
+        p.end();
+    }
+
+    s_v = readRaw();
+    for (float& h : s_hist) h = s_v;
+    s_histFull = false;
+    s_hi = 0;
+    return s_divider;
+}
 
 int charging() {
     if (s_v >= 4.17f) return 0;
